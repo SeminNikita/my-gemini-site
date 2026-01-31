@@ -3,40 +3,31 @@ export default async function handler(req, res) {
 
   const apiKey = process.env.GEMINI_API_KEY;
   
-  // Мы переходим на стабильную версию v1 и используем самую надежную модель
-  const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-
-  const payload = {
-    contents: [{
-      parts: [{ text: req.body.prompt || "Привет" }]
-    }]
-  };
+  // Используем gemini-1.5-flash-latest — это самый надежный эндпоинт
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
 
   try {
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: req.body.prompt || "Hi" }] }]
+      })
     });
 
     const data = await response.json();
 
-    // Если Google вернул ошибку, выводим её полностью для диагностики
     if (data.error) {
+      // Это поможет нам увидеть реальную причину от Google
       return res.status(data.error.code || 500).json({ 
-        text: `Google Error ${data.error.code}: ${data.error.message}` 
+        text: `Google Error: ${data.error.message} (Reason: ${data.error.status})` 
       });
     }
 
-    // Проверяем, есть ли ответ в структуре
-    if (data.candidates && data.candidates[0].content.parts[0].text) {
-      const aiText = data.candidates[0].content.parts[0].text;
-      res.status(200).json({ text: aiText });
-    } else {
-      res.status(500).json({ text: "Получен пустой ответ от ИИ." });
-    }
+    const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Пустой ответ";
+    res.status(200).json({ text: aiText });
 
   } catch (error) {
-    res.status(500).json({ text: `Системная ошибка: ${error.message}` });
+    res.status(500).json({ text: `System Error: ${error.message}` });
   }
 }
