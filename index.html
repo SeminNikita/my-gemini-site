@@ -50,7 +50,7 @@
             });
             
             const data = await response.json();
-            chatWindow.innerHTML += `<div class="message ai-msg">${data.text}</div>`;
+            chatWindow.innerHTML += `<div class="message ai-msg">${data.text || "Пустой ответ от сервера"}</div>`;
         } catch (error) {
             chatWindow.innerHTML += `<div class="message ai-msg">Ошибка: Не удалось связаться с сервером.</div>`;
         } finally {
@@ -63,3 +63,4 @@
 </body>
 
 </html>
+
