@@ -1,34 +1,72 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini AI Chat</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; padding: 20px; background: #f0f2f5; }
+        #chat-container { width: 100%; max-width: 500px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 20px; }
+        #chat-window { height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; display: flex; flex-direction: column; }
+        .message { margin: 5px 0; padding: 8px 12px; border-radius: 15px; max-width: 80%; }
+        .user-msg { background: #007bff; color: white; align-self: flex-end; }
+        .ai-msg { background: #e9ecef; color: black; align-self: flex-start; }
+        #input-area { display: flex; gap: 10px; }
+        input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div id="chat-container">
+    <div id="chat-window"></div>
+    <div id="input-area">
+        <input type="text" id="user-input" placeholder="Введите ваш вопрос...">
+        <button onclick="sendMessage()">Отправить</button>
+    </div>
+</div>
+
 <script>
-async function sendMessage() {
-    const input = document.getElementById('user-input');
-    const chatWindow = document.getElementById('chat-window');
-    const userInput = input.value.trim();
+    async function sendMessage() {
+        const input = document.getElementById('user-input');
+        const chatWindow = document.getElementById('chat-window');
+        const userInput = input.value.trim();
 
-    if (!userInput) return;
+        if (!userInput) return;
 
-    chatWindow.innerHTML += `<div class="message user-msg">${userInput}</div>`;
-    input.value = '';
+        // Добавляем сообщение пользователя
+        chatWindow.innerHTML += `<div class="message user-msg">${userInput}</div>`;
+        input.value = '';
+        chatWindow.scrollTop = chatWindow.scrollHeight;
 
-    try {
-        const response = await fetch('/api/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: userInput })
-        });
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: userInput })
+            });
 
-        const data = await response.json();
+            const data = await response.json();
 
-        if (!response.ok) {
-            throw new Error(data.text || `Статус: ${response.status}`);
+            if (!response.ok) {
+                throw new Error(data.text || 'Ошибка сервера');
+            }
+
+            // Добавляем ответ ИИ
+            chatWindow.innerHTML += `<div class="message ai-msg">${data.text}</div>`;
+
+        } catch (error) {
+            chatWindow.innerHTML += `<div class="message ai-msg" style="color: red;">Ошибка: ${error.message}</div>`;
         }
 
-        chatWindow.innerHTML += `<div class="message ai-msg">${data.text}</div>`;
-
-    } catch (error) {
-        console.error("Ошибка:", error);
-        chatWindow.innerHTML += `<div class="message ai-msg" style="color: red;">Ошибка: ${error.message}</div>`;
+        chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
-    chatWindow.scrollTop = chatWindow.scrollHeight;
-}
+    // Позволяет отправлять сообщение нажатием Enter
+    document.getElementById('user-input').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') sendMessage();
+    });
 </script>
+
+</body>
+</html>
