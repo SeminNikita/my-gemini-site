@@ -2,35 +2,47 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ text: "Method Not Allowed" });
 
   const apiKey = process.env.GEMINI_API_KEY;
-  
-  // Пытаемся сначала использовать 1.5-flash в стабильной версии v1
-  const models = ["gemini-1.5-flash", "gemini-1.0-pro"];
+  const userPrompt = req.body.prompt || "Привет";
+
+  // Список всех возможных вариаций имен моделей
+  const modelVariants = [
+    "gemini-1.5-flash",
+    "gemini-1.5-pro",
+    "gemini-pro"
+  ];
+
   let lastError = "";
 
-  for (const modelName of models) {
+  // Пробуем каждую модель по очереди
+  for (const modelName of modelVariants) {
     try {
-      const url = `https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?key=${apiKey}`;
+      // Пробуем версию v1beta, так как она самая гибкая
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
       
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: req.body.prompt || "Привет" }] }]
+          contents: [{ parts: [{ text: userPrompt }] }]
         })
       });
 
       const data = await response.json();
 
-      if (data.candidates && data.candidates[0].content.parts[0].text) {
-        return res.status(200).json({ text: data.candidates[0].content.parts[0].text });
+      if (response.ok && data.candidates && data.candidates[0].content) {
+        const aiText = data.candidates[0].content.parts[0].text;
+        return res.status(200).json({ text: aiText });
       } else if (data.error) {
-        lastError = data.error.message;
-        continue; // Пробуем следующую модель, если эта не найдена
+        lastError = `${modelName}: ${data.error.message}`;
+        console.log(`Model ${modelName} failed:`, data.error.message);
       }
     } catch (err) {
       lastError = err.message;
     }
   }
 
-  res.status(500).json({ text: `Google API Error: ${lastError}` });
+  // Если ни одна модель не подошла
+  res.status(404).json({ 
+    text: `Ни одна модель не доступна для вашего ключа. Последняя ошибка: ${lastError}. Проверьте доступ в Google AI Studio.` 
+  });
 }
