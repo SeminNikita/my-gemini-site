@@ -1,41 +1,35 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
 export default async function handler(req, res) {
-  // Разрешаем только POST запросы
-  if (req.method !== 'POST') {
-    return res.status(405).json({ text: "Метод не поддерживается" });
-  }
+  if (req.method !== 'POST') return res.status(405).json({ text: "Method Not Allowed" });
 
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ text: "Ошибка: API ключ не настроен в Vercel" });
-  }
+  // Важно: используем актуальный адрес v1beta
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
-  const genAI = new GoogleGenerativeAI(apiKey);
+  const payload = {
+    contents: [{
+      parts: [{ text: req.body.prompt || "Привет" }]
+    }]
+  };
 
   try {
-    // Используем максимально точное название модели
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
     });
 
-    const prompt = req.body.prompt || "Привет";
+    const data = await response.json();
 
-    // Указываем пустой массив генерации, чтобы избежать конфликтов версий
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-
-    return res.status(200).json({ text: text });
-  } catch (error) {
-    console.error("Ошибка API:", error);
-    
-    // Если ошибка 404 всё ещё летит от Google, попробуем дать подсказку
-    let errorMessage = error.message;
-    if (errorMessage.includes("404")) {
-      errorMessage = "Модель не найдена. Попробуйте создать НОВЫЙ ключ в Google AI Studio, возможно старый ключ ограничен.";
+    if (data.error) {
+      throw new Error(data.error.message);
     }
-    
-    return res.status(500).json({ text: "Ошибка: " + errorMessage });
+
+    // Извлекаем текст из специфической структуры ответа Google
+    const aiText = data.candidates[0].content.parts[0].text;
+    res.status(200).json({ text: aiText });
+
+  } catch (error) {
+    console.error("Fetch Error:", error);
+    res.status(500).json({ text: `Ошибка: ${error.message}` });
   }
 }
