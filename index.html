@@ -43,7 +43,7 @@
 
         try {
             // Отправляем запрос на ваш сервер (создадим его на следующем шаге)
-            const response = await fetch('/server/gemini', {
+            const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt: userMsg })
@@ -63,5 +63,6 @@
 </body>
 
 </html>
+
 
 
