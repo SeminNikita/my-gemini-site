@@ -5,33 +5,36 @@ async function sendMessage() {
 
     if (!userInput) return;
 
-    // Добавляем сообщение пользователя
+    // Добавляем ваше сообщение в чат
     chatWindow.innerHTML += `<div class="message user-msg">${userInput}</div>`;
     input.value = '';
 
     try {
-        // ВАЖНО: адрес должен начинаться со слэша /
+        // Запрос идет на правильный путь, который Vercel видит в логах
         const response = await fetch('/api/chat', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+            },
             body: JSON.stringify({ prompt: userInput })
         });
 
         const data = await response.json();
 
         if (response.ok) {
-            // Отображаем ответ ИИ
+            // Если сервер ответил успешно, выводим текст от ИИ
             chatWindow.innerHTML += `<div class="message ai-msg">${data.text}</div>`;
         } else {
-            chatWindow.innerHTML += `<div class="message ai-msg">Ошибка: ${data.text || 'Неизвестная ошибка'}</div>`;
+            // Если Google вернул ошибку, выводим её текст
+            chatWindow.innerHTML += `<div class="message ai-msg">Ошибка: ${data.text}</div>`;
         }
     } catch (error) {
+        // Если вообще не удалось достучаться до файла api/chat.js
         console.error("Fetch error:", error);
         chatWindow.innerHTML += `<div class="message ai-msg">Ошибка: Не удалось связаться с сервером.</div>`;
     }
 
+    // Прокрутка чата вниз
     chatWindow.scrollTop = chatWindow.scrollHeight;
 }
-
-
 
