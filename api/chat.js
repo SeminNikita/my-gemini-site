@@ -1,25 +1,25 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export default async function handler(req, res) {
-  // Добавляем обработку только POST запросов
-  if (req.method !== 'POST') {
-    return res.status(405).json({ text: "Метод не разрешен" });
-  }
+  if (req.method !== 'POST') return res.status(405).json({ text: "Method Not Allowed" });
 
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-  // Используем gemini-1.5-flash — она быстрее и стабильнее для бесплатных ключей
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return res.status(500).json({ text: "API Key missing" });
 
+  const genAI = new GoogleGenerativeAI(apiKey);
+  
   try {
-    const prompt = req.body.prompt || "Привет!";
-    const result = await model.generateContent(prompt);
+    // Пробуем самую актуальную стабильную версию
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    
+    const result = await model.generateContent(req.body.prompt || "Hello");
     const response = await result.response;
     const text = response.text();
     
-    // Возвращаем четкий JSON объект
-    res.status(200).json({ text: text });
+    res.status(200).json({ text });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ text: "Ошибка Gemini: " + error.message });
+    console.error("Detailed Error:", error);
+    // Выводим текст ошибки прямо в чат для диагностики
+    res.status(500).json({ text: `Ошибка: ${error.message}. Попробуйте сменить регион функции в настройках Vercel на USA.` });
   }
 }
