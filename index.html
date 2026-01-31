@@ -1,3 +1,4 @@
+<script>
 async function sendMessage() {
     const input = document.getElementById('user-input');
     const chatWindow = document.getElementById('chat-window');
@@ -9,28 +10,25 @@ async function sendMessage() {
     input.value = '';
 
     try {
-        // Мы используем относительный путь
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ prompt: userInput })
         });
 
-        // Если сервер ответил, но там ошибка (например, 404 или 500)
+        const data = await response.json();
+
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ text: "Непонятная ошибка сервера" }));
-            throw new Error(errorData.text || `Статус сервера: ${response.status}`);
+            throw new Error(data.text || `Статус: ${response.status}`);
         }
 
-        const data = await response.json();
         chatWindow.innerHTML += `<div class="message ai-msg">${data.text}</div>`;
 
     } catch (error) {
-        console.error("Ошибка запроса:", error);
-        // Выводим ТОЧНЫЙ текст ошибки в чат, чтобы мы его увидели
-        chatWindow.innerHTML += `<div class="message ai-msg" style="color: red;">Детали ошибки: ${error.message}</div>`;
+        console.error("Ошибка:", error);
+        chatWindow.innerHTML += `<div class="message ai-msg" style="color: red;">Ошибка: ${error.message}</div>`;
     }
 
     chatWindow.scrollTop = chatWindow.scrollHeight;
 }
-
+</script>
