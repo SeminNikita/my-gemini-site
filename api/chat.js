@@ -8,7 +8,7 @@ export default async function handler(req, res) {
 
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   // Используем gemini-1.5-flash — она быстрее и стабильнее для бесплатных ключей
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
   try {
     const prompt = req.body.prompt || "Привет!";
