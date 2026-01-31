@@ -5,36 +5,32 @@ async function sendMessage() {
 
     if (!userInput) return;
 
-    // Добавляем ваше сообщение в чат
     chatWindow.innerHTML += `<div class="message user-msg">${userInput}</div>`;
     input.value = '';
 
     try {
-        // Запрос идет на правильный путь, который Vercel видит в логах
+        // Мы используем относительный путь
         const response = await fetch('/api/chat', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ prompt: userInput })
         });
 
-        const data = await response.json();
-
-        if (response.ok) {
-            // Если сервер ответил успешно, выводим текст от ИИ
-            chatWindow.innerHTML += `<div class="message ai-msg">${data.text}</div>`;
-        } else {
-            // Если Google вернул ошибку, выводим её текст
-            chatWindow.innerHTML += `<div class="message ai-msg">Ошибка: ${data.text}</div>`;
+        // Если сервер ответил, но там ошибка (например, 404 или 500)
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ text: "Непонятная ошибка сервера" }));
+            throw new Error(errorData.text || `Статус сервера: ${response.status}`);
         }
+
+        const data = await response.json();
+        chatWindow.innerHTML += `<div class="message ai-msg">${data.text}</div>`;
+
     } catch (error) {
-        // Если вообще не удалось достучаться до файла api/chat.js
-        console.error("Fetch error:", error);
-        chatWindow.innerHTML += `<div class="message ai-msg">Ошибка: Не удалось связаться с сервером.</div>`;
+        console.error("Ошибка запроса:", error);
+        // Выводим ТОЧНЫЙ текст ошибки в чат, чтобы мы его увидели
+        chatWindow.innerHTML += `<div class="message ai-msg" style="color: red;">Детали ошибки: ${error.message}</div>`;
     }
 
-    // Прокрутка чата вниз
     chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
